@@ -4,7 +4,11 @@ pipeline {
     environment {
         CI = 'true'
     }
-
+    
+    tools {
+    nodejs 'NodeJS 18'    // ← 這裡要跟 Global Tool Config 裡的 Name 一樣
+    }
+    
     stages {
         stage('Install Dependencies') {
             steps {
