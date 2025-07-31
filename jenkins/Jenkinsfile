@@ -1,25 +1,48 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:lts-buster-slim'
-            args '-p 3000:3000'
-        }
-    }
+    agent any
+
     environment {
         CI = 'true'
     }
+
     stages {
-        stage('Setup & Build') {
+        stage('Install Dependencies') {
             steps {
                 sh 'npm install'
-                sh 'npm run build'
-                sh 'npm start & echo $! > .pidfile'
-                input message: '🔍 網頁啟動中，請打開 http://<Jenkins_IP>:3000 查看。看完後按 Proceed'
             }
         }
-        stage('Shutdown') {
+
+        stage('Run Tests') {
             steps {
-                sh 'kill $(cat .pidfile)'
+                sh 'npm test'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'npm run build'
+            }
+        }
+
+        stage('Serve App') {
+            steps {
+                sh '''
+                    npm install -g serve
+                    nohup serve -s build -l 3000 &
+                    echo $! > serve.pid
+                '''
+                echo 'Web app is running at http://<jenkins-ip>:3000'
+                input message: '查看完頁面後，請點繼續'
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                sh '''
+                    if [ -f serve.pid ]; then
+                      kill $(cat serve.pid) || true
+                    fi
+                '''
             }
         }
     }
